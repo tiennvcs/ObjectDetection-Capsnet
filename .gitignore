@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # My customs
-./data/
+data/*
