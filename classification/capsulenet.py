@@ -40,13 +40,16 @@ def CapsNet(input_shape, n_class, routings, batch_size):
             `eval_model` can also be used for training.
     """
     x = layers.Input(shape=input_shape, batch_size=batch_size)
-
+    #x = layers.Input(shape=input_shape)
+    
+    #print((None,*input_shape))
+    #x = layers.Input(batch_input_shape = (None,*input_shape))
     # Layer 1: Just a conventional Conv2D layer
     conv1 = layers.Conv2D(filters=256, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
-
+    #print(x)
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
     primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
-
+    
     # Layer 3: Capsule layer. Routing algorithm works here.
     digitcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings, name='digitcaps')(primarycaps)
 
@@ -55,13 +58,15 @@ def CapsNet(input_shape, n_class, routings, batch_size):
     out_caps = Length(name='capsnet')(digitcaps)
 
     # Decoder network.
-    y = layers.Input(shape=(n_class,))
+    y = layers.Input(shape=(n_class,),batch_size=batch_size)
+    #y = layers.Input(shape=(n_class,))
     masked_by_y = Mask()([digitcaps, y])  # The true label is used to mask the output of capsule layer. For training
     masked = Mask()(digitcaps)  # Mask using the capsule with maximal length. For prediction
 
     # Shared Decoder model in training and prediction
     decoder = models.Sequential(name='decoder')
-    decoder.add(layers.Dense(512, activation='relu', input_dim=16 * n_class))
+    decoder.add(layers.Dense(512, activation='relu', input_dim=16 * n_class,batch_size=batch_size))
+    #decoder.add(layers.Dense(512, activation='relu', input_dim=16 * n_class))
     decoder.add(layers.Dense(1024, activation='relu'))
     decoder.add(layers.Dense(np.prod(input_shape), activation='sigmoid'))
     decoder.add(layers.Reshape(target_shape=input_shape, name='out_recon'))
@@ -69,12 +74,17 @@ def CapsNet(input_shape, n_class, routings, batch_size):
     # Models for training and evaluation (prediction)
     train_model = models.Model([x, y], [out_caps, decoder(masked_by_y)])
     eval_model = models.Model(x, [out_caps, decoder(masked)])
-
+    #train_model.summary()
+    #eval_model.summary()
     # manipulate model
-    noise = layers.Input(shape=(n_class, 16))
+    noise = layers.Input(shape=(n_class, 16),batch_size=batch_size)
+    #noise = layers.Input(shape=(n_class, 16))
     noised_digitcaps = layers.Add()([digitcaps, noise])
     masked_noised_y = Mask()([noised_digitcaps, y])
     manipulate_model = models.Model([x, y, noise], decoder(masked_noised_y))
+    
+
+    #manipulate_model.summary()
     return train_model, eval_model, manipulate_model
 
 
@@ -91,7 +101,6 @@ def margin_loss(y_true, y_pred):
 
     return tf.reduce_mean(tf.reduce_sum(L, 1))
 
-
 def train(model,  # type: models.Model
           data, args):
     """
@@ -101,18 +110,13 @@ def train(model,  # type: models.Model
     :param args: arguments
     :return: The trained model
     """
-    # unpacking the data
-    (x_train, y_train), (x_test, y_test) = data
-    print(x_train.shape)
-    print(y_train.shape)
-    print(x_test.shape)
-    print(y_test.shape)
+
     #exit(0)
 
     # callbacks
     log = callbacks.CSVLogger(args.save_dir + '/log.csv')
     checkpoint = callbacks.ModelCheckpoint(args.save_dir + '/weights-{epoch:02d}.h5', monitor='val_capsnet_acc',
-                                           save_best_only=True, save_weights_only=True, verbose=1)
+                                           save_best_only=False, save_weights_only=True, verbose=1)
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args.lr * (args.lr_decay ** epoch))
 
     # compile the model
@@ -131,17 +135,53 @@ def train(model,  # type: models.Model
     def train_generator(x, y, batch_size, shift_fraction=0.):
         train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
                                            height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
-        generator = train_datagen.flow(x, y, batch_size=batch_size)
+        generator = train_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
+        
+        x_batch_, y_batch_ = generator.next()
         while 1:
             x_batch, y_batch = generator.next()
-            yield (x_batch, y_batch), (y_batch, x_batch)
+            if x_batch.shape[0] < batch_size:
+                yield (x_batch_, y_batch_), (y_batch_, x_batch_)
+            else:
+                yield (x_batch, y_batch), (y_batch, x_batch)
 
+
+    def val_generator(x, y, batch_size, shift_fraction=0.):
+        val_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
+                                           height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
+        generator = val_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
+        
+        x_batch_, y_batch_ = generator.next()
+        while 1:
+            x_batch, y_batch = generator.next()
+            if x_batch.shape[0] < batch_size:
+                yield (x_batch_, y_batch_), (y_batch_, x_batch_)
+            else:
+                yield (x_batch, y_batch), (y_batch, x_batch)
+    #train_data_gen = DataGenerator(x_train,y_train,args.batch_size)
+
+    # unpacking the data
+    (x_train, y_train), (x_test, y_test) = data    
+    
     # Training with data augmentation. If shift_fraction=0., no augmentation.
+    #for epochs in range(args.epochs):
     model.fit(train_generator(x_train, y_train, args.batch_size, args.shift_fraction),
-              steps_per_epoch=int(y_train.shape[0] / args.batch_size),
-              epochs=args.epochs,
-              validation_data=[[x_test, x_test], [y_test, y_test]], batch_size=args.batch_size,
-              callbacks=[log, checkpoint, lr_decay])
+            steps_per_epoch=int(y_train.shape[0] / args.batch_size),
+            epochs=args.epochs,
+            validation_data=val_generator(x_test, y_test, args.batch_size, args.shift_fraction),
+            validation_steps=int(y_test.shape[0]/ args.batch_size),
+            validation_batch_size=args.batch_size,
+            validation_freq=5,
+            callbacks=[log, checkpoint, lr_decay]
+            )
+    #model.evaluate((x_train,y_train), (y_train,x_train), batch_size=1,
+      #          #steps_per_epoch=int(y_train.shape[0] / args.batch_size),
+      #          #epochs=1,
+      #          #validation_data=train_generator(x_test,y_test,args.batch_size, args.shift_fraction),
+      #          #validation_split=0.2,
+      #          #validation_batch_size = args.batch_size,
+      #          callbacks=[log, checkpoint, lr_decay]
+      #          )
     # End: Training with data augmentation -----------------------------------------------------------------------#
 
     model.save_weights(args.save_dir + '/trained_model.h5')
@@ -209,34 +249,36 @@ def load_mnist():
 def split_dataset(data, label, ratio):
 
     from sklearn.model_selection import train_test_split
-
+    
     (x_train, x_test, y_train, y_test) = train_test_split(data, label, test_size=ratio, random_state=18521489)
     x_train = x_train / 255.
     x_test = x_test / 255.
-
-    # y_train = to_categorical(y_train.astype('float32'))
-    # y_test = to_categorical(y_test.astype('float32'))
     y_train = to_categorical(np.reshape(y_train, (-1, 1)).astype('float32'))
     y_test = to_categorical(np.reshape(y_test, (-1, 1)).astype('float32'))
     
     return (x_train, y_train), (x_test, y_test)
 
 
-def load_dataset(path):
+def load_dataset(path, gray_scale=True):
     
     X = []
     y = []
 
     image_paths = sorted(glob2.glob(os.path.join(path, 'images', '*.png')))
-    for image_path in image_paths:
-        img = cv2.imread(image_path, 0)
-        X.append(np.expand_dims(img, axis=2))
+
+    if gray_scale:
+        for image_path in image_paths:
+            img = cv2.imread(image_path, 0)
+            X.append(np.expand_dims(img, axis=2))
+    else:
+        for image_path in image_paths:
+            img = cv2.imread(image_path)
+            X.append(img)
 
     with open(os.path.join(path, 'label.txt'), 'r') as f:
         data_labels = f.readlines()
         for line in data_labels:
             y.append(line.rstrip().split()[1])
-
     return np.array(X), np.array(y)
 
 
@@ -251,13 +293,19 @@ if __name__ == "__main__":
     from tensorflow.keras import callbacks
 
     # setting the hyper parameters
+
     parser = argparse.ArgumentParser(description="Capsule Network on custom dataset.")
+    # My custom optional arguments
     parser.add_argument('--data_path', default='/content/data', type=str,
                         help='The path of training image folder')
-    parser.add_argument('--ratio', default=0.01, type=float,
+    parser.add_argument('--ratio', default=0.2, choices=[0.1, 0.2], type=float,
                         help='The ratio splitting data into validation set and training set.')
+    parser.add_argument('--gray_scale', type=bool,
+                        help='The kind of data (gray scale or RGB channel) for training.')
+    
+    # Default optional arguments
     parser.add_argument('--epochs', default=50, type=int)
-    parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--batch_size', default=32, choices=[16, 32, 64, 128, 256], type=int)
     parser.add_argument('--lr', default=0.001, type=float,
                         help="Initial learning rate")
     parser.add_argument('--lr_decay', default=0.9, type=float,
@@ -286,8 +334,12 @@ if __name__ == "__main__":
     # load data
     #(x_train, y_train), (x_test, y_test) = load_mnist()
     
-    X, y = load_dataset(args.data_path)
+    X, y = load_dataset(args.data_path, args.gray_scale)
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args.ratio)
+    print(x_train.shape)
+    print(x_test.shape)
+    print(y_train.shape)
+    print(y_test.shape)
 
     # define model
     model, eval_model, manipulate_model = CapsNet(input_shape=x_train.shape[1:],
