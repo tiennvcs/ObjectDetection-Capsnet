@@ -1,12 +1,3 @@
-"""
-Some key layers used for constructing a Capsule Network. These layers can used to construct CapsNet on other dataset, 
-not just on MNIST.
-*NOTE*: some functions can be implemented in multiple ways, I keep all of them. You can try them for yourself just by
-uncommenting them and commenting their counterparts.
-
-Author: Xifeng Guo, E-mail: `guoxifeng1990@163.com`, Github: `https://github.com/XifengGuo/CapsNet-Keras`
-"""
-
 import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras import initializers, layers
@@ -53,8 +44,20 @@ class Mask(layers.Layer):
             x = tf.sqrt(tf.reduce_sum(tf.square(inputs), -1))
             # generate the mask which is a one-hot code.
             # mask.shape=[None, n_classes]=[None, num_capsule]
-            mask = tf.one_hot(indices=tf.argmax(x, 1), depth=x.shape[1])
-
+            #print(tf.expand_dims(x, axis=0))
+            #print(tf.expand_dims(x, axis=0).shape[0])
+            #print(x.dim)
+            #print(len(x.shape)==1)
+            
+            if len(x.shape) == 1:
+              #x = tf.expand_dims(x, axis=0)
+              mask = tf.one_hot(indices=tf.argmax(tf.expand_dims(x, axis=0), 1), depth=tf.expand_dims(x, axis=0).shape[1])
+              #print("Here")
+              #print(x)
+            else:
+              mask = tf.one_hot(indices=tf.argmax(x, 1), depth=x.shape[1])
+              #print("Here_2")
+              #print(x)
         # inputs.shape=[None, num_capsule, dim_capsule]
         # mask.shape=[None, num_capsule]
         # masked.shape=[None, num_capsule * dim_capsule]
@@ -120,8 +123,12 @@ class CapsuleLayer(layers.Layer):
     def call(self, inputs, training=None):
         # inputs.shape=[None, input_num_capsule, input_dim_capsule]
         # inputs_expand.shape=[None, 1, input_num_capsule, input_dim_capsule, 1]
+        # b.shape = [None, self.num_capsule, 1, self.input_num_capsule]
+        print("inputs: ", inputs)
         inputs_expand = tf.expand_dims(tf.expand_dims(inputs, 1), -1)
-
+        #print((tf.expand_dims(inputs, 2)))
+        #print("inputs_expand",inputs_expand)
+        #print("inputs" + "-"*10,inputs)
         # Replicate num_capsule dimension to prepare being multiplied by W
         # inputs_tiled.shape=[None, num_capsule, input_num_capsule, input_dim_capsule, 1]
         inputs_tiled = tf.tile(inputs_expand, [1, self.num_capsule, 1, 1, 1])
@@ -133,12 +140,16 @@ class CapsuleLayer(layers.Layer):
         # matmul(W, x): [..., dim_capsule, input_dim_capsule] x [..., input_dim_capsule, 1] -> [..., dim_capsule, 1].
         # inputs_hat.shape = [None, num_capsule, input_num_capsule, dim_capsule]
         inputs_hat = tf.squeeze(tf.map_fn(lambda x: tf.matmul(self.W, x), elems=inputs_tiled))
-
+        print("inputs_hat: ", inputs_hat)
         # Begin: Routing algorithm ---------------------------------------------------------------------#
         # The prior for coupling coefficient, initialized as zeros.
-        # b.shape = [None, self.num_capsule, 1, self.input_num_capsule].
+        # b.shape = [None, self.num_capsule, 1, self.input_num_capsule]
+        #print("inputs.shape[0]: "+"^"*20, tf.expand_dims(inputs, 2))
+        #print("self.num_capsule", self.num_capsule)
+        #print("self.input_num_capsule", self.input_num_capsule)
+        #b = tf.placeholder(tf.float32 , shape=[inputs.shape[0], self.num_capsule, 1, self.input_num_capsule])
         b = tf.zeros(shape=[inputs.shape[0], self.num_capsule, 1, self.input_num_capsule])
-
+        
         assert self.routings > 0, 'The routings should be > 0.'
         for i in range(self.routings):
             # c.shape=[batch_size, num_capsule, 1, input_num_capsule]
@@ -186,6 +197,7 @@ def PrimaryCap(inputs, dim_capsule, n_channels, kernel_size, strides, padding):
     output = layers.Conv2D(filters=dim_capsule*n_channels, kernel_size=kernel_size, strides=strides, padding=padding,
                            name='primarycap_conv2d')(inputs)
     outputs = layers.Reshape(target_shape=[-1, dim_capsule], name='primarycap_reshape')(output)
+    #print("outputs: xx ---", outputs)
     return layers.Lambda(squash, name='primarycap_squash')(outputs)
 
 
