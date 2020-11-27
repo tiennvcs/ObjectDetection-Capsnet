@@ -55,14 +55,14 @@ def CapsNet(input_shape, n_class, routings, batch_size):
     # Models for training and evaluation (prediction)
     train_model = models.Model([x, y], [out_caps, decoder(masked_by_y)])
     eval_model = models.Model(x, [out_caps, decoder(masked)])
-
+    #train_model.summary()
+    #eval_model.summary()
     # manipulate model
     noise = layers.Input(shape=(n_class, 16),batch_size=batch_size)
     #noise = layers.Input(shape=(n_class, 16))
     noised_digitcaps = layers.Add()([digitcaps, noise])
     masked_noised_y = Mask()([noised_digitcaps, y])
     manipulate_model = models.Model([x, y, noise], decoder(masked_noised_y))
-
     return train_model, eval_model, manipulate_model
 
 
@@ -183,23 +183,12 @@ def test(model, data, args):
 def manipulate_latent(model, data, n_class, args):
 
     print('-'*30 + 'Begin: manipulate' + '-'*30)
+    
     x_test, y_test = data
 
-    print("x_test.shape", x_test.shape)
-    print("y_test.shape", y_test.shape)
-    
-    index = np.argmax(y_test, 1) == args.sign
-    
-    print(index)
-    
+    index = np.argmax(y_test, 1) == args.sign    
     number = np.random.randint(low=0, high=sum(index) - 1)
-    
-    print(number)
-    print(y_test[index])
-    print(y_test[index].shape)
-
     selected_indices = np.random.choice(len(y_test[index]), args.batch_size, replace=False)
-
     x, y = x_test[index][selected_indices], y_test[index][selected_indices]
 
     #x, y = np.expand_dims(x, 0), np.expand_dims(y, 0)
@@ -272,6 +261,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
 
+    # Load dataset
     X, y = load_dataset(args.data_path)
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args.ratio)
 
