@@ -336,10 +336,6 @@ if __name__ == "__main__":
     
     X, y = load_dataset(args.data_path, args.gray_scale)
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args.ratio)
-    print(x_train.shape)
-    print(x_test.shape)
-    print(y_train.shape)
-    print(y_test.shape)
 
     # define model
     model, eval_model, manipulate_model = CapsNet(input_shape=x_train.shape[1:],
