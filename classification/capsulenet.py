@@ -162,9 +162,8 @@ def train(model,  # type: models.Model
 
 
 def test(model, data, args):
-    x_test, y_test = data
     
-    print(x_test.shape)
+    x_test, y_test = data
 
     y_pred, x_recon = model.predict(x_test, batch_size=args.batch_size)
     print('-'*30 + 'Begin: test' + '-'*30)
