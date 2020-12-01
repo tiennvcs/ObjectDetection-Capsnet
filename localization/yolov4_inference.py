@@ -116,7 +116,7 @@ def main(args):
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
     net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA_FP16)
     model = cv2.dnn_DetectionModel(net)
-    model.setInputParams(size=(416, 416), scale=1/255)
+    model.setInputParams(size=(512, 512), scale=1/255)
 
     # Make inference on single image or multi-images
 
