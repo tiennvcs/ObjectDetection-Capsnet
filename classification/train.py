@@ -9,21 +9,23 @@ from tensorflow.keras import callbacks
 from tensorflow.keras import backend as K
 from tensorflow.keras import layers, models, optimizers
 
-
 from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, data_generator, plot_log
+from config import BATCH_SIZE
 
 
 K.set_image_data_format('channels_last')
 
 
 def train(model, data, args):
+    
+    (x_train, y_train), (x_test, y_test) = data        
 
     log = callbacks.CSVLogger(os.path.join(args['save_dir'], '/log.csv'))
-    saving_path = os.path.join(args['save_dir'], 'weights-{epoch:02d}.h5')
+    saving_path = os.path.join('model_weights', 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
-                                            save_freq=3333*args['batch_size'], save_best_only=False, 
+                                            save_freq=y_train.shape[0], save_best_only=False, 
                                             save_weights_only=True, verbose=1)
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
@@ -33,15 +35,14 @@ def train(model, data, args):
                   loss_weights=[1., args['lam_recons']],
                   metrics={'capsnet': 'accuracy'})
 
-    (x_train, y_train), (x_test, y_test) = data        
     # Training with data augmentation. If shift_fraction=0., no augmentation.
-    model.fit(data_generator(x_train, y_train, args['batch_size'], args['shift_fraction']),
-            steps_per_epoch=int(y_train.shape[0]/args['batch_size']),
+    model.fit(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
+            steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             epochs=args['epochs'],
-            validation_data=data_generator(x_test, y_test, args['batch_size'], args['shift_fraction']),
-            validation_steps=int(y_test.shape[0]/args['batch_size']),
-            validation_batch_size=args['batch_size'],
-            validation_freq=10,
+            validation_data=data_generator(x_test, y_test, BATCH_SIZE, args['shift_fraction']),
+            validation_steps=int(y_test.shape[0]/BATCH_SIZE),
+            validation_batch_size=BATCH_SIZE,
+            validation_freq=5,
             callbacks=[log, checkpoint, lr_decay])
     
 
@@ -68,7 +69,7 @@ def main(args):
     model, _, _ = CapsNet(input_shape=x_train.shape[1:],
                     n_class=len(np.unique(np.argmax(y_train, 1))),
                     routings=args['routings'],
-                    batch_size=args['batch_size'])
+                    batch_size=BATCH_SIZE)
 
 
     # Load model weights from the path                    

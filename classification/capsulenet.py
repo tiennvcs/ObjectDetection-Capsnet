@@ -55,8 +55,7 @@ def CapsNet(input_shape, n_class, routings, batch_size):
     # Models for training and evaluation (prediction)
     train_model = models.Model([x, y], [out_caps, decoder(masked_by_y)])
     eval_model = models.Model(x, [out_caps, decoder(masked)])
-    #train_model.summary()
-    #eval_model.summary()
+
     # manipulate model
     noise = layers.Input(shape=(n_class, 16),batch_size=batch_size)
     #noise = layers.Input(shape=(n_class, 16))
@@ -79,86 +78,8 @@ def margin_loss(y_true, y_pred):
 
     return tf.reduce_mean(tf.reduce_sum(L, 1))
 
-def train(model,  # type: models.Model
-          data, args):
-    """
-    Training a CapsuleNet
-    :param model: the CapsuleNet model
-    :param data: a tuple containing training and testing data, like `((x_train, y_train), (x_test, y_test))`
-    :param args: arguments
-    :return: The trained model
-    """
-
-    # callbacks
-    log = callbacks.CSVLogger(os.path.join(args.save_dir, '/log.csv'))
-    saving_path = os.path.join(args.save_dir, '/weights-{epoch:02d}.h5')
-    checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc',
-                                           save_best_only=False, save_weights_only=True, verbose=1)
-    lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args.lr*(args.lr_decay ** epoch))
-
-    # compile the model
-    model.compile(optimizer=optimizers.Adam(lr=args.lr),
-                  loss=[margin_loss, 'mse'],
-                  loss_weights=[1., args.lam_recon],
-                  metrics={'capsnet': 'accuracy'})
 
 
-    # Begin: Training with data augmentation ---------------------------------------------------------------------#
-    def train_generator(x, y, batch_size, shift_fraction=0.):
-        train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
-                                           height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
-        generator = train_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
-        x_batch_, y_batch_ = generator.next()
-        while 1:
-            x_batch, y_batch = generator.next()
-            if x_batch.shape[0] < batch_size:
-                yield (x_batch_, y_batch_), (y_batch_, x_batch_)
-            else:
-                yield (x_batch, y_batch), (y_batch, x_batch)
-
-
-    def val_generator(x, y, batch_size, shift_fraction=0.):
-        val_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
-                                           height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
-        generator = val_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
-        x_batch_, y_batch_ = generator.next()
-        while 1:
-            x_batch, y_batch = generator.next()
-            if x_batch.shape[0] < batch_size:
-                yield (x_batch_, y_batch_), (y_batch_, x_batch_)
-            else:
-                yield (x_batch, y_batch), (y_batch, x_batch)
-
-    # unpacking the data
-    (x_train, y_train), (x_test, y_test) = data    
-    
-    # Training with data augmentation. If shift_fraction=0., no augmentation.
-    #for epochs in range(args.epochs):
-    model.fit(train_generator(x_train, y_train, args.batch_size, args.shift_fraction),
-            steps_per_epoch=int(y_train.shape[0] / args.batch_size),
-            epochs=args.epochs,
-            validation_data=val_generator(x_test, y_test, args.batch_size, args.shift_fraction),
-            validation_steps=int(y_test.shape[0]/ args.batch_size),
-            validation_batch_size=args.batch_size,
-            validation_freq=1,
-            callbacks=[log, checkpoint, lr_decay]
-            )
-    #model.evaluate((x_train,y_train), (y_train,x_train), batch_size=1,
-      #          #steps_per_epoch=int(y_train.shape[0] / args.batch_size),
-      #          #epochs=1,
-      #          #validation_data=train_generator(x_test,y_test,args.batch_size, args.shift_fraction),
-      #          #validation_split=0.2,
-      #          #validation_batch_size = args.batch_size,
-      #          callbacks=[log, checkpoint, lr_decay]
-      #          )
-    # End: Training with data augmentation -----------------------------------------------------------------------#
-    model.save_weights(args.save_dir + '/trained_model.h5')
-    print('Trained model saved to \'%s/trained_model.h5\'' % args.save_dir)
-
-    from utils import plot_log
-    plot_log(args.save_dir + '/log.csv',show=True)
-
-    return model
 
 
 def test(model, data, args):
@@ -166,6 +87,7 @@ def test(model, data, args):
     x_test, y_test = data
 
     y_pred, x_recon = model.predict(x_test, batch_size=args.batch_size)
+
     print('-'*30 + 'Begin: test' + '-'*30)
     print('Test acc:', np.sum(np.argmax(y_pred, 1) == np.argmax(y_test, 1)) / y_test.shape[0])
 
@@ -185,12 +107,11 @@ def manipulate_latent(model, data, n_class, args):
     
     x_test, y_test = data
 
-    index = np.argmax(y_test, 1) == args.sign    
+    index = np.argmax(y_test, 1) == args.sign   
     number = np.random.randint(low=0, high=sum(index) - 1)
     selected_indices = np.random.choice(len(y_test[index]), args.batch_size, replace=False)
     x, y = x_test[index][selected_indices], y_test[index][selected_indices]
 
-    #x, y = np.expand_dims(x, 0), np.expand_dims(y, 0)
     noise = np.zeros([args.batch_size, n_class, 16])
     x_recons = []
     for dim in range(16):
@@ -223,18 +144,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Capsule Network on custom dataset.")
     
     # My custom optional arguments
-    parser.add_argument('--data_path', default='/content/data', type=str,
+    parser.add_argument('--data_path', default='../data', type=str,
                         help='The path of training image folder')
-    parser.add_argument('--ratio', default=0.2, choices=[0.1, 0.2], type=float,
+    parser.add_argument('--ratio', default=0.2, type=float,
                         help='The ratio splitting data into validation set and training set.')
-    parser.add_argument('--sign', default=0, type=int, choices=[0, 1, 2, 3, 4, 5, 6],
-                        help="Traffic sign to manipulate")
     # End my custom optional arguments
 
     # Default optional arguments
     # setting the hyper parameters
     parser.add_argument('--epochs', default=50, type=int)
-    parser.add_argument('--batch_size', default=32, choices=[16, 32, 64, 128, 256], type=int)
+    parser.add_argument('--batch_size', default=16, choices=[4, 8, 16, 32, 64, 128, 256], type=int)
     parser.add_argument('--lr', default=0.001, type=float,
                         help="Initial learning rate")
     parser.add_argument('--lr_decay', default=0.9, type=float,
@@ -245,8 +164,6 @@ if __name__ == "__main__":
                         help="Number of iterations used in routing algorithm. should > 0")
     parser.add_argument('--shift_fraction', default=0.1, type=float,
                         help="Fraction of pixels to shift at most in each direction.")
-    parser.add_argument('--debug', action='store_true',
-                        help="Save weights by TensorBoard")
     parser.add_argument('--save_dir', default='./result')
     parser.add_argument('-t', '--testing', action='store_true',
                         help="Test the trained model on testing dataset")
@@ -255,11 +172,11 @@ if __name__ == "__main__":
     # End default optional arguments
 
     args = parser.parse_args()
-    
 
     if not os.path.exists(args.save_dir):
         os.mkdir(args.save_dir)
 
+    np.random.seed(18521489)
     # Load dataset
     X, y = load_dataset(args.data_path)
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args.ratio)
@@ -275,14 +192,13 @@ if __name__ == "__main__":
             model.load_weights(args.weights)
         model.summary()
         train(model=model, data=((x_train, y_train), (x_test, y_test)), args=args)
-
     else:
         if args.weights is None:
             print('No weights are provided. Will test using random initialized weights.')
         else:
-            manipulate_model.load_weights(args.weights)
+            #manipulate_model.load_weights(args.weights)
             eval_model.load_weights(args.weights)
 
         #manipulate_latent(model=manipulate_model, data=(x_test, y_test), 
-        #                n_class=len(np.unique(np.argmax(y_train, 1))), args=args)        
+        #                n_class=len(np.unique(np.argmax(y_train, 1))), args=args)
         test(model=eval_model, data=(x_test, y_test), args=args)

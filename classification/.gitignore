@@ -4,3 +4,5 @@ __pycache__
 *.sh
 result/*
 !result/*.png
+output_test/
+test_result/
