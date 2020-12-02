@@ -9,7 +9,7 @@ import os
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from config import IMAGE_SIZE, BATCH_SIZE
+from .config import IMAGE_SIZE, BATCH_SIZE
 
 
 def plot_log(filename, show=True):
@@ -17,6 +17,7 @@ def plot_log(filename, show=True):
     data = pandas.read_csv(filename)
 
     fig = plt.figure(figsize=(4,6))
+    
     fig.subplots_adjust(top=0.95, bottom=0.05, right=0.95)
     fig.add_subplot(211)
     for key in data.keys():

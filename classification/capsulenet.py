@@ -1,11 +1,13 @@
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
-from tensorflow.keras import backend as K
-import matplotlib.pyplot as plt
-from utils import combine_images
 from PIL import Image
-from capsulelayers import CapsuleLayer, PrimaryCap, Length, Mask
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from tensorflow.keras import backend as K
+from tensorflow.keras import layers, models, optimizers
+
+
+from .utils import combine_images
+from .capsulelayers import CapsuleLayer, PrimaryCap, Length, Mask
 
 K.set_image_data_format('channels_last')
 
