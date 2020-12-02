@@ -1,8 +1,0 @@
-.idea
-__pycache__
-*.h5
-*.sh
-result/*
-!result/*.png
-output_test/
-test_result/

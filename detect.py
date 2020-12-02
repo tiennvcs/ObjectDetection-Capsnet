@@ -6,8 +6,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import cv2
 import numpy as np
 
-from classification.config import ENCODED2LABEL, BATCH_SIZE, IMAGE_SIZE, ROUTINGS
-from classification.capsulenet import CapsNet
+from config import ENCODED2LABEL, BATCH_SIZE, IMAGE_SIZE, ROUTINGS
+from capsulenet import CapsNet
 
 COLOR = (0, 255, 0)
 
@@ -110,7 +110,6 @@ def detect_image_folder(folder_path, detector, classifier, confidence_thresh=0.2
 
 def main(args):
 
-    print(args)
     # Build detector model
     print("[INFO] Build the detector and load detect model from {} ...".format(args['detect_weights']))
     try:
