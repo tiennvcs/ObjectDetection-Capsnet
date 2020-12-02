@@ -132,4 +132,3 @@ dmypy.json
 data.zip
 .gd/*
 model_weights/
-data/

@@ -85,14 +85,12 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Training Capsule classifier on custom dataset.")
-    
 
-    parser.add_argument('--data_path', default='../data', type=str,
+    parser.add_argument('--data_path', default='./data_train', type=str,
                         help='The path of training image folder')
     parser.add_argument('--ratio', default=0.2, type=float,
                         help='The ratio splitting data into validation set and training set.')
     parser.add_argument('--epochs', default=50, type=int)
-    parser.add_argument('--batch_size', default=16, choices=[4, 8, 16, 32, 64, 128, 256], type=int)
     parser.add_argument('--lr', default=0.001, type=float,
                         help="Initial learning rate")
     parser.add_argument('--lr_decay', default=0.9, type=float,
