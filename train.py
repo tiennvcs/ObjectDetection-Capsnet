@@ -61,6 +61,9 @@ def main(args):
     # Set the fixed random seed
     np.random.seed(18521489)
 
+    if not os.path.exists(args['data_path']):
+        print("[ERROR] Invalid data directory")
+        exit(0)
     # Load dataset
     X, y = load_dataset(args['data_path'])
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args['ratio'])
