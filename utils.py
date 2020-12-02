@@ -9,7 +9,7 @@ import os
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from config import IMAGE_SIZE, BATCH_SIZE
+from config import IMAGE_SIZE, BATCH_SIZE, ROUTINGS
 
 
 def plot_log(filename, show=True):
@@ -117,7 +117,7 @@ def print_info(args):
     print("|{:<30}|{:<30}|".format("Learning rate", args['lr']).center(100))
     print("|{:<30}|{:<30}|".format("Learning rate decay", args['lr_decay']).center(100))
     print("|{:<30}|{:<30}|".format("lam_recons", args['lam_recons']).center(100))
-    print("|{:<30}|{:<30}|".format("Number of routings", args['routings']).center(100))
+    print("|{:<30}|{:<30}|".format("Number of routings", ROUTINGS).center(100))
     print("|{:<30}|{:<30}|".format("Shift fraction", args['shift_fraction']).center(100))
     print("|{:<30}|{:<30}|".format("Saving directory", args['save_dir']).center(100))
     print("|{:<30}|{:<30}|".format("Model weights directory", str(args['weights'])).center(100))

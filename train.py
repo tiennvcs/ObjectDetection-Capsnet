@@ -22,6 +22,9 @@ def train(model, data, args):
     (x_train, y_train), (x_test, y_test) = data        
 
     log = callbacks.CSVLogger(os.path.join(args['save_dir'], '/log.csv'))
+    if not os.path.exists('model_weights'):
+        os.mkdir('model_weights')
+        
     saving_path = os.path.join('model_weights', 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
