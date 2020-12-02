@@ -11,7 +11,7 @@ from tensorflow.keras import layers, models, optimizers
 
 from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, data_generator, plot_log
-from config import BATCH_SIZE
+from config import BATCH_SIZE, ROUTINGS
 
 
 K.set_image_data_format('channels_last')
@@ -71,7 +71,7 @@ def main(args):
 
     model, _, _ = CapsNet(input_shape=x_train.shape[1:],
                     n_class=len(np.unique(np.argmax(y_train, 1))),
-                    routings=args['routings'],
+                    routings=ROUTINGS,
                     batch_size=BATCH_SIZE)
 
 
@@ -100,8 +100,6 @@ if __name__ == '__main__':
                         help="The value multiplied by lr at each epoch. Set a larger value for larger epochs")
     parser.add_argument('--lam_recons', default=0.392, type=float,
                         help="The coefficient for the loss of decoder")
-    parser.add_argument('-r', '--routings', default=3, type=int,
-                        help="Number of iterations used in routing algorithm. should > 0")
     parser.add_argument('--shift_fraction', default=0.1, type=float,
                         help="Fraction of pixels to shift at most in each direction.")
     parser.add_argument('--debug', action='store_true',

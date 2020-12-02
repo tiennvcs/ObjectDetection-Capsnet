@@ -12,7 +12,7 @@ from PIL import Image
 from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, \
                     data_generator, plot_log, combine_images
-from config import BATCH_SIZE
+from config import BATCH_SIZE, ROUTINGS
 
 
 K.set_image_data_format('channels_last')
@@ -84,7 +84,7 @@ def main(args):
 
     _, eval_model, manipulate_model = CapsNet(input_shape=x_test.shape[1:],
                     n_class=len(np.unique(np.argmax(y_test, 1))),
-                    routings=args['routings'],
+                    routings=ROUTINGS,
                     batch_size=BATCH_SIZE)
 
 
@@ -116,8 +116,6 @@ if __name__ == '__main__':
                         help="The path of model weights for testing")
     parser.add_argument('--output_path', default='./output_test',
                         help='The directory store the output of evaluations')
-    parser.add_argument('-r', '--routings', default=3, type=int,
-                        help="Number of iterations used in routing algorithm. should > 0")
     parser.add_argument('--sign', default=0, type=int, choices=[0, 1, 2, 3, 4, 5, 6],
                         help="Traffic sign to manipulate")
 

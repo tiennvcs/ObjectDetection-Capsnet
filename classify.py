@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from capsulenet import CapsNet
-from config import ENCODED2LABEL, BATCH_SIZE, IMAGE_SIZE
+from config import ENCODED2LABEL, BATCH_SIZE, IMAGE_SIZE, ROUTINGS
 
 
 def classify_single_image(img):
@@ -20,7 +20,7 @@ def classify_single_image(img):
     
     _, model, _ = CapsNet(input_shape=imgs.shape[1:],
                     n_class=len(ENCODED2LABEL),
-                    routings=args['routings'],
+                    routings=ROUTINGS,
                     batch_size=BATCH_SIZE)
 
     print("[INFO] Loading model weights from {}".format(args['weights']))
@@ -48,7 +48,7 @@ def classify_image_folder(folder_path):
 
     _, model, _ = CapsNet(input_shape=imgs.shape[1:],
                     n_class=len(ENCODED2LABEL),
-                    routings=args['routings'],
+                    routings=ROUTINGS,
                     batch_size=BATCH_SIZE)
 
     print("[INFO] Loading model weights from {}".format(args['weights']))
@@ -83,14 +83,10 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Training Capsule classifier on custom dataset.")
-    
-
     parser.add_argument('--image_path', default='./test_images/172_1.png', type=str,
                         help='The path of the predicted image.')
     parser.add_argument('-w', '--weights', default='weights/',
                         help="The path of model weights for testing")
-    parser.add_argument('-r', '--routings', default=3, type=int,
-                        help="Number of iterations used in routing algorithm. should > 0")
     args = vars(parser.parse_args())
     
     # Runing with input arguments
