@@ -1,5 +1,5 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import argparse
 
@@ -21,14 +21,14 @@ def train(model, data, args):
     
     (x_train, y_train), (x_test, y_test) = data        
 
-    log = callbacks.CSVLogger(os.path.join(args['save_dir'], '/log.csv'))
+    log = callbacks.CSVLogger(os.path.join(args['save_dir'], 'log.csv'))
     if not os.path.exists('model_weights'):
         os.mkdir('model_weights')
         
     saving_path = os.path.join('model_weights', 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
-                                            save_freq=y_train.shape[0], save_best_only=False, 
+                                            save_freq=3*y_train.shape[0], save_best_only=False, 
                                             save_weights_only=True, verbose=1)
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
@@ -50,10 +50,9 @@ def train(model, data, args):
     
 
     model.save_weights(args['save_dir'] + '/trained_model.h5')
-    print('Trained model saved to \'%s/trained_model.h5\'' % args['save_dir'])
+    print('Trained model saved to \'%s/final_trained_model.h5\'' % args['save_dir'])
 
-    plot_log(args['save_dir'] + '/log.csv',show=True)
-    return model
+    plot_log(args['save_dir'] + '/log.csv', show=False)
 
 
 def main(args):
@@ -107,7 +106,7 @@ if __name__ == '__main__':
                         help="Fraction of pixels to shift at most in each direction.")
     parser.add_argument('--debug', action='store_true',
                         help="Save weights by TensorBoard")
-    parser.add_argument('--save_dir', default='./result')
+    parser.add_argument('--save_dir', default='./log_files')
     parser.add_argument('-w', '--weights', default=None,
                         help="The path of the saved weights. Should be specified when testing")
     # End default optional arguments
@@ -115,7 +114,7 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     print_info(args)
 
-    time.sleep(10)
+    #time.sleep(10)
     
     
     # Runing with input arguments
