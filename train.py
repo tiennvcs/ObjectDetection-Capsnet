@@ -30,7 +30,7 @@ def train(model, data, args):
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
     # compile the model
-    model.compile(optimizer=optimizers.SGD(lr=args['lr']),
+    model.compile(optimizer=optimizers.Adam(lr=args['lr']),
                   loss=[margin_loss, 'mse'],
                   loss_weights=[1., args['lam_recons']],
                   metrics={'capsnet': 'accuracy'})
@@ -40,6 +40,7 @@ def train(model, data, args):
             steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             epochs=args['epochs'],
             validation_data=[[x_test, y_test], [y_test, x_test]],
+            validation_freq=5,
             callbacks=[log, checkpoint, lr_decay])
     
 
