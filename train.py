@@ -11,7 +11,7 @@ from tensorflow.keras import layers, models, optimizers
 
 from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, data_generator, plot_log
-from config import BATCH_SIZE, ROUTINGS
+from config import BATCH_SIZE, ROUTINGS, SAVE_FREQ
 
 
 K.set_image_data_format('channels_last')
@@ -25,7 +25,7 @@ def train(model, data, args):
     saving_path = os.path.join(args['save_dir'], 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
-                                            save_freq=y_train.shape[0], save_best_only=False, 
+                                            save_freq=SAVE_FREQ*int(y_train.shape[0]/BATCH_SIZE), save_best_only=False, 
                                             save_weights_only=True, verbose=1)
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
@@ -36,7 +36,7 @@ def train(model, data, args):
                   metrics={'capsnet': 'accuracy'})
 
     # Training with data augmentation. If shift_fraction=0., no augmentation.
-    model.fit_generator(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
+    model.fit(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
             steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             epochs=args['epochs'],
             validation_data=[[x_test, y_test], [y_test, x_test]],
