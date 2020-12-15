@@ -21,11 +21,8 @@ def train(model, data, args):
     
     (x_train, y_train), (x_test, y_test) = data        
 
-    log = callbacks.CSVLogger(os.path.join(args['save_dir'], 'log.csv'))
-    if not os.path.exists('model_weights'):
-        os.mkdir('model_weights')
-        
-    saving_path = os.path.join('model_weights', 'weights-{epoch:02d}.h5')
+    log = callbacks.CSVLogger(os.path.join(args['save_dir'], 'log.csv'))    
+    saving_path = os.path.join(args['save_dir'], 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
                                             save_freq=3*y_train.shape[0], save_best_only=False, 
@@ -45,14 +42,14 @@ def train(model, data, args):
             validation_data=data_generator(x_test, y_test, BATCH_SIZE, args['shift_fraction']),
             validation_steps=int(y_test.shape[0]/BATCH_SIZE),
             validation_batch_size=BATCH_SIZE,
-            validation_freq=5,
+            validation_freq=10,
             callbacks=[log, checkpoint, lr_decay])
     
 
     model.save_weights(args['save_dir'] + '/trained_model.h5')
     print('Trained model saved to \'%s/final_trained_model.h5\'' % args['save_dir'])
 
-    plot_log(args['save_dir'] + 'log.csv', show=False)
+    plot_log(args['save_dir'] + '/log.csv', show=False)
 
 
 def main(args):
@@ -70,6 +67,11 @@ def main(args):
     X, y = load_dataset(args['data_path'])
     (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=args['ratio'])
 
+    # print data information
+    print(str("{:<40}|{:<30}".format("The number of training examples", len(x_train))).center(100))
+    print(str("{:<40}|{:<30}".format("The number of valid examples", len(x_test))).center(100))
+    print(str("{:<40}|{:<30}".format("The number of classes", len(np.unique(np.argmax(y_train, 1))))).center(100))
+    time.sleep(5)
 
     model, _, _ = CapsNet(input_shape=x_train.shape[1:],
                     n_class=len(np.unique(np.argmax(y_train, 1))),
@@ -91,7 +93,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Training Capsule classifier on custom dataset.")
 
-    parser.add_argument('--data_path', default='./data_train', type=str,
+    parser.add_argument('--data_path', default=None, type=str,
                         help='The path of training image folder')
     parser.add_argument('--ratio', default=0.2, type=float,
                         help='The ratio splitting data into validation set and training set.')
@@ -106,7 +108,7 @@ if __name__ == '__main__':
                         help="Fraction of pixels to shift at most in each direction.")
     parser.add_argument('--debug', action='store_true',
                         help="Save weights by TensorBoard")
-    parser.add_argument('--save_dir', default='./log_files')
+    parser.add_argument('--save_dir', default='./result')
     parser.add_argument('-w', '--weights', default=None,
                         help="The path of the saved weights. Should be specified when testing")
     # End default optional arguments
@@ -115,7 +117,6 @@ if __name__ == '__main__':
     print_info(args)
 
     #time.sleep(10)
-    
     
     # Runing with input arguments
     main(args)

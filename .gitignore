@@ -131,4 +131,5 @@ dmypy.json
 # My customs
 data.zip
 .gd/*
-model_weights/
+data_train
+result/*.h5
