@@ -113,11 +113,11 @@ def split_dataset(data, label, ratio):
     return (x_train, y_train), (x_test, y_test)
 
 
-def data_generator(x, y, batch_size, shift_fraction=0.3):
+def data_generator(x, y, batch_size, shift_fraction=0.):
     train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
                                        height_shift_range=shift_fraction,
-                                       rotation_range=90,
-                                       brightness_range=[0.2,1.0])
+                                       rotation_range=10,
+                                       brightness_range=[0.2,0.3])
     generator = train_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
     x_batch_, y_batch_ = generator.next()
     while 1:

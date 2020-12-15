@@ -102,7 +102,7 @@ if __name__ == '__main__':
                         help="The value multiplied by lr at each epoch. Set a larger value for larger epochs")
     parser.add_argument('--lam_recons', default=0.392, type=float,
                         help="The coefficient for the loss of decoder")
-    parser.add_argument('--shift_fraction', default=0.3, type=float,
+    parser.add_argument('--shift_fraction', default=0.15, type=float,
                         help="Fraction of pixels to shift at most in each direction.")
     parser.add_argument('--debug', action='store_true',
                         help="Save weights by TensorBoard")
