@@ -37,10 +37,10 @@ def train(model, data, args):
 
     # Training with data augmentation. If shift_fraction=0., no augmentation.
     model.fit(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
-            steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             epochs=args['epochs'],
-            validation_data=[[x_test, y_test], [y_test, x_test]],
-            validation_freq=5,
+            steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
+            validation_data=((x_test, y_test), (y_test, x_test)), batch_size=BATCH_SIZE,
+            validation_freq=1,
             callbacks=[log, checkpoint, lr_decay])
     
 
