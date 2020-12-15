@@ -23,9 +23,8 @@ def train(model, data, args):
 
     log = callbacks.CSVLogger(os.path.join(args['save_dir'], '/log.csv'))
     if not os.path.exists('model_weights'):
-        os.mkdir('model_weights')
-        
-    saving_path = os.path.join('model_weights', 'weights-{epoch:02d}.h5')
+        os.mkdir('model_weights')   
+    saving_path = os.path.join('model_weights', 'weights-{epoch:04d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
                                             save_freq=y_train.shape[0], save_best_only=False, 
@@ -45,7 +44,7 @@ def train(model, data, args):
             validation_data=data_generator(x_test, y_test, BATCH_SIZE, args['shift_fraction']),
             validation_steps=int(y_test.shape[0]/BATCH_SIZE),
             validation_batch_size=BATCH_SIZE,
-            validation_freq=5,
+            validation_freq=50,
             callbacks=[log, checkpoint, lr_decay])
     
 
