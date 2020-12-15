@@ -25,24 +25,21 @@ def train(model, data, args):
     saving_path = os.path.join(args['save_dir'], 'weights-{epoch:02d}.h5')
 
     checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_capsnet_acc', 
-                                            save_freq=3*y_train.shape[0], save_best_only=False, 
+                                            save_freq=y_train.shape[0], save_best_only=False, 
                                             save_weights_only=True, verbose=1)
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
     # compile the model
-    model.compile(optimizer=optimizers.Adam(lr=args['lr']),
+    model.compile(optimizer=optimizers.SGD(lr=args['lr']),
                   loss=[margin_loss, 'mse'],
                   loss_weights=[1., args['lam_recons']],
                   metrics={'capsnet': 'accuracy'})
 
     # Training with data augmentation. If shift_fraction=0., no augmentation.
-    model.fit(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
+    model.fit_generator(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
             steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             epochs=args['epochs'],
-            validation_data=data_generator(x_test, y_test, BATCH_SIZE, args['shift_fraction']),
-            validation_steps=int(y_test.shape[0]/BATCH_SIZE),
-            validation_batch_size=BATCH_SIZE,
-            validation_freq=10,
+            validation_data=[[x_test, y_test], [y_test, x_test]],
             callbacks=[log, checkpoint, lr_decay])
     
 
@@ -104,7 +101,7 @@ if __name__ == '__main__':
                         help="The value multiplied by lr at each epoch. Set a larger value for larger epochs")
     parser.add_argument('--lam_recons', default=0.392, type=float,
                         help="The coefficient for the loss of decoder")
-    parser.add_argument('--shift_fraction', default=0.1, type=float,
+    parser.add_argument('--shift_fraction', default=0.3, type=float,
                         help="Fraction of pixels to shift at most in each direction.")
     parser.add_argument('--debug', action='store_true',
                         help="Save weights by TensorBoard")
