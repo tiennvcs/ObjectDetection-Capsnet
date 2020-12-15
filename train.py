@@ -44,7 +44,7 @@ def train(model, data, args):
             callbacks=[log, checkpoint, lr_decay])
     
 
-    model.save_weights(args['save_dir'] + '/trained_model.h5')
+    model.save_weights(args['save_dir'] + '/final_trained_model.h5')
     print('Trained model saved to \'%s/final_trained_model.h5\'' % args['save_dir'])
 
     plot_log(args['save_dir'] + '/log.csv', show=False)
