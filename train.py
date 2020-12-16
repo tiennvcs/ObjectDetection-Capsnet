@@ -30,7 +30,7 @@ def train(model, data, args):
     lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
 
     # compile the model
-    model.compile(optimizer=optimizers.Adam(lr=args['lr']),
+    model.compile(optimizer=optimizers.RMSprop(lr=args['lr']),
                   loss=[margin_loss, 'mse'],
                   loss_weights=[1., args['lam_recons']],
                   metrics={'capsnet': 'accuracy'})
