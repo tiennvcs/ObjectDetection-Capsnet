@@ -32,39 +32,6 @@ def test(model, data, args):
     print('--> Reconstructed images are saved to %s/real_and_recon.png' % args['output_path'])
 
 
-# def manipulate_latent(model, data, n_class, args):
-
-#     print(str('-'*30 + 'Begin: manipulate' + '-'*30).center(100))
-    
-#     x_test, y_test = data
-
-#     index = np.argmax(y_test, 1) == args['sign']
-
-#     number = np.random.randint(low=0, high=sum(index) - 1)
-
-#     selected_indices = np.random.choice(len(y_test[index]), BATCH_SIZE, replace=True)
-#     print(selected_indices)
-
-#     x, y = x_test[index][selected_indices], y_test[index][selected_indices]
-
-#     noise = np.zeros([BATCH_SIZE, n_class, 16])
-#     x_recons = []
-#     for dim in range(16):
-#         for r in [-0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.2, 0.25]:
-#             tmp = np.copy(noise)
-#             tmp[:, :, dim] = r
-#             x_recon = model.predict([x, y, tmp])
-#             x_recons.append(x_recon)
-
-#     x_recons = np.concatenate(x_recons)
-
-#     img = combine_images(x_recons, height=16)
-#     image = img * 255
-#     Image.fromarray(image.astype(np.uint8)).save(args['output_path'] + '/manipulate-%d.png' % args['sign'])
-#     print(str('Manipulated result saved to %s/manipulate-%d.png' % (args['output_path'], args['sign'])).center(100))
-#     print(str('-'*30 + 'End: manipulate' + '-'*30).center(100))
-
-
 def main(args):
     if not os.path.exists(args['output_path']):
         os.mkdir(args['output_path'])
