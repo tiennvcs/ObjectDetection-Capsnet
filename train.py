@@ -40,7 +40,7 @@ def train(model, data, args):
             epochs=args['epochs'],
             steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
             validation_data=((x_test, y_test), (y_test, x_test)), batch_size=BATCH_SIZE,
-            validation_freq=5,
+            validation_freq=1,
             callbacks=[log, checkpoint, lr_decay])
     
 
