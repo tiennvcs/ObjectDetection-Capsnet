@@ -59,20 +59,40 @@ def combine_images(generated_images, height=None, width=None):
     return image
 
 
-def load_dataset(path):
+def load_dataset(path, istrain=True):
     
     X = []
     y = []
 
-    image_paths = sorted(glob2.glob(os.path.join(path, 'images', '*.png')))
-    for image_path in image_paths:
-        img = cv2.resize(src=cv2.imread(image_path), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
-        X.append(img)
-    with open(os.path.join(path, 'label.txt'), 'r') as f:
-        data_labels = f.readlines()
-        for line in data_labels:
-            y.append(line.rstrip().split()[1])
-    return np.array(X), np.array(y)
+    if istrain:
+        image_paths = sorted(glob2.glob(os.path.join(path, 'train', '*.png')))
+        for image_path in image_paths:
+            img = cv2.resize(src=cv2.imread(image_path), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            X.append(img)
+        with open(os.path.join(path, 'train_label.txt'), 'r') as f:
+            data_labels = f.readlines()
+            for line in data_labels:
+                y.append(line.rstrip().split()[0])
+        return np.array(X), np.array(y)
+    
+    else:
+        image_paths = sorted(glob2.glob(os.path.join(path, 'test', '*.png')))
+        for image_path in image_paths:
+            img = cv2.resize(src=cv2.imread(image_path), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            X.append(img)
+        with open(os.path.join(path, 'test_label.txt'), 'r') as f:
+            data_labels = f.readlines()
+            for line in data_labels:
+                y.append(line.rstrip().split()[0])
+        x_test = np.array(X)
+        y_test = np.array(y)
+        n_samples = len(y_test)
+        while n_samples % BATCH_SIZE != 0:
+            n_samples -= 1
+        x_test = x_test[0:n_samples]/255.
+        y_test = to_categorical(np.reshape(y_test[0:n_samples], (-1, 1)).astype('float32'))
+        return x_test, y_test
+
 
 
 def split_dataset(data, label, ratio):
@@ -80,10 +100,11 @@ def split_dataset(data, label, ratio):
     from sklearn.model_selection import train_test_split
     
     test_size = int(len(data)*ratio)
-    while test_size % 512 != 0:
-        test_size += 1
+    while test_size % BATCH_SIZE != 0:
+        test_size -= 1
 
-    (x_train, x_test, y_train, y_test) = train_test_split(data, label, test_size=test_size, random_state=18521489)
+    (x_train, x_test, y_train, y_test) = train_test_split(
+        data, label, test_size=test_size, random_state=18521489)
     x_train = x_train/255.
     x_test = x_test/255.
     y_train = to_categorical(np.reshape(y_train, (-1, 1)).astype('float32'))
@@ -94,7 +115,9 @@ def split_dataset(data, label, ratio):
 
 def data_generator(x, y, batch_size, shift_fraction=0.):
     train_datagen = ImageDataGenerator(width_shift_range=shift_fraction,
-                                        height_shift_range=shift_fraction)  # shift up to 2 pixel for MNIST
+                                       height_shift_range=shift_fraction,
+                                       rotation_range=5,
+                                       brightness_range=[0.2,0.25])
     generator = train_datagen.flow(x, y, batch_size=batch_size, shuffle=True)
     x_batch_, y_batch_ = generator.next()
     while 1:

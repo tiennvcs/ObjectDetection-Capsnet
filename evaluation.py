@@ -24,53 +24,48 @@ def test(model, data, args):
 
     y_pred, x_recon = model.predict(x_test, batch_size=BATCH_SIZE)
 
-    print(str('-'*30 + 'Begin: test' + '-'*30).center(100))
-    print('--> Test acc:'.center(100), np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0])
-
+    test_acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
     img = combine_images(np.concatenate([x_test[:50], x_recon[:50]]))
     image = img * 255.
-    Image.fromarray(image.astype(np.uint8)).save(args['output_path'] + "/real_and_recon.png")
-    print()
-    print('--> Reconstructed images are saved to %s/real_and_recon.png'.center(100) % args['output_path'])
-    print(str('-'*30 + 'End test'+ '-'*30).center(100))
-    #plt.imshow(plt.imread(args['output_path'] + "/real_and_recon.png"))
-    #plt.show()
+    Image.fromarray(image.astype(np.uint8)).save(os.path.join(args['output_path'], "real_and_recon.png"))
+    print('--> Test acc: {}'.format(test_acc))
+    print('--> Reconstructed images are saved to %s/real_and_recon.png' % args['output_path'])
 
 
-def manipulate_latent(model, data, n_class, args):
+# def manipulate_latent(model, data, n_class, args):
 
-    print('-'*30 + 'Begin: manipulate' + '-'*30)
+#     print(str('-'*30 + 'Begin: manipulate' + '-'*30).center(100))
     
-    x_test, y_test = data
+#     x_test, y_test = data
 
-    index = np.argmax(y_test, 1) == args['sign']
+#     index = np.argmax(y_test, 1) == args['sign']
 
-    number = np.random.randint(low=0, high=sum(index) - 1)
+#     number = np.random.randint(low=0, high=sum(index) - 1)
 
-    selected_indices = np.random.choice(len(y_test[index]), BATCH_SIZE, replace=False)
+#     selected_indices = np.random.choice(len(y_test[index]), BATCH_SIZE, replace=True)
+#     print(selected_indices)
 
-    x, y = x_test[index][selected_indices], y_test[index][selected_indices]
+#     x, y = x_test[index][selected_indices], y_test[index][selected_indices]
 
-    noise = np.zeros([BATCH_SIZE, n_class, 16])
-    x_recons = []
-    for dim in range(16):
-        for r in [-0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.2, 0.25]:
-            tmp = np.copy(noise)
-            tmp[:, :, dim] = r
-            x_recon = model.predict([x, y, tmp])
-            x_recons.append(x_recon)
+#     noise = np.zeros([BATCH_SIZE, n_class, 16])
+#     x_recons = []
+#     for dim in range(16):
+#         for r in [-0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15, 0.2, 0.25]:
+#             tmp = np.copy(noise)
+#             tmp[:, :, dim] = r
+#             x_recon = model.predict([x, y, tmp])
+#             x_recons.append(x_recon)
 
-    x_recons = np.concatenate(x_recons)
+#     x_recons = np.concatenate(x_recons)
 
-    img = combine_images(x_recons, height=16)
-    image = img * 255
-    Image.fromarray(image.astype(np.uint8)).save(args['output_path'] + '/manipulate-%d.png' % args['sign'])
-    print('manipulated result saved to %s/manipulate-%d.png' % (args['output_path'], args['sign']))
-    print('-'*30 + 'End: manipulate' + '-'*30)
+#     img = combine_images(x_recons, height=16)
+#     image = img * 255
+#     Image.fromarray(image.astype(np.uint8)).save(args['output_path'] + '/manipulate-%d.png' % args['sign'])
+#     print(str('Manipulated result saved to %s/manipulate-%d.png' % (args['output_path'], args['sign'])).center(100))
+#     print(str('-'*30 + 'End: manipulate' + '-'*30).center(100))
 
 
 def main(args):
-
     if not os.path.exists(args['output_path']):
         os.mkdir(args['output_path'])
 
@@ -79,27 +74,29 @@ def main(args):
 
     # Load dataset
     print("[INFO] Loading data ...")
-    X, y = load_dataset(args['test_data'])
-    (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=0.5)
+    # X, y = load_dataset(args['test_data'])
+    # (x_train, y_train), (x_test, y_test) = split_dataset(data=X, label=y, ratio=0.9999999)
+    x_test, y_test = load_dataset(args['test_data'], istrain=False)
+
+    print(str("{:<40}|{:<30}".format("The number of testing examples", len(y_test))).center(100))
+    print(str("{:<40}|{:<30}".format("The number of classes", len(np.unique(np.argmax(y_test, 1))))).center(100))
 
     _, eval_model, manipulate_model = CapsNet(input_shape=x_test.shape[1:],
                     n_class=len(np.unique(np.argmax(y_test, 1))),
                     routings=ROUTINGS,
                     batch_size=BATCH_SIZE)
 
-
     # Load model weights from the path                    
     if args['weights'] is not None:
         eval_model.load_weights(args['weights'])
         manipulate_model.load_weights(args['weights'])
     
-    eval_model.summary()
-    manipulate_model.summary()
+    # eval_model.summary()
+    # manipulate_model.summary()
     
-    print("[INFO] Evaluating on noise images ...")
-    manipulate_latent(model=manipulate_model, data=(x_test, y_test), 
-                    n_class=len(np.unique(np.argmax(y_train, 1))), args=args)
-
+    # print("[INFO] Evaluating on noise images ...")
+    # manipulate_latent(model=manipulate_model, data=(x_test, y_test), 
+    #               n_class=len(np.unique(np.argmax(y_test, 1))), args=args)
     print("[INFO] Evaluating on test image ...")
     test(model=eval_model, data=(x_test, y_test), args=args)
 
@@ -108,8 +105,6 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Training Capsule classifier on custom dataset.")
-    
-
     parser.add_argument('--test_data', default='../data', type=str,
                         help='The path of training image folder')
     parser.add_argument('-w', '--weights', default=None,
