@@ -52,28 +52,12 @@ def train(model, data, args):
         callbacks.ModelCheckpoint(filepath=os.path.join(args['save_dir'], 'model.{epoch:02d}-{val_loss:.2f}.h5')),
         callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch)),
     ]
-
-    # log = callbacks.CSVLogger(os.path.join(args['save_dir'], 'log.csv'))    
-    # saving_path = os.path.join(args['save_dir'], 'weights-{epoch:02d}.h5')
-
-    # checkpoint = callbacks.ModelCheckpoint(saving_path, monitor='val_loss', 
-    #                                         save_freq=SAVE_FREQ*int(y_train.shape[0]/BATCH_SIZE), save_best_only=False, 
-    #                                         save_weights_only=True, verbose=1)
-    # lr_decay = callbacks.LearningRateScheduler(schedule=lambda epoch: args['lr']*(args['lr_decay'] ** epoch))
-
+    
     # compile the model
     model.compile(optimizer=optimizers.Adam(lr=args['lr']),
                   loss=['categorical_crossentropy'],
                   metrics=['accuracy'])
-                  
-    # Training with data augmentation. If shift_fraction=0., no augmentation.
-    # model.fit(data_generator(x_train, y_train, BATCH_SIZE, args['shift_fraction']),
-    #         epochs=args['epochs'],
-    #         steps_per_epoch=int(y_train.shape[0]/BATCH_SIZE),
-    #         validation_data=data_generator(x_test, y_test, BATCH_SIZE, args['shift_fraction']), batch_size=BATCH_SIZE,
-    #         validation_freq=1,
-    #         #callbacks=[log, checkpoint, lr_decay]
-    #         callbacks=my_callbacks)
+                
     datagen = ImageDataGenerator(
                 width_shift_range=args['shift_fraction'],
                 height_shift_range=args['shift_fraction'],
