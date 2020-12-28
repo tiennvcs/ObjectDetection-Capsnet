@@ -9,6 +9,7 @@ from tensorflow.keras import callbacks
 from tensorflow.keras import backend as K
 from tensorflow.keras import layers, models, optimizers
 
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, data_generator, plot_log
 from config import BATCH_SIZE, ROUTINGS, SAVE_FREQ

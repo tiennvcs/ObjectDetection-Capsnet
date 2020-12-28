@@ -67,7 +67,8 @@ def load_dataset(path, istrain=True):
     if istrain:
         image_paths = sorted(glob2.glob(os.path.join(path, 'train', '*.png')))
         for image_path in image_paths:
-            img = cv2.resize(src=cv2.imread(image_path), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            img = cv2.resize(src=cv2.imread(image_path, 0), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            img = np.expand_dims(img , 2)
             X.append(img)
         with open(os.path.join(path, 'train_label.txt'), 'r') as f:
             data_labels = f.readlines()
@@ -78,7 +79,8 @@ def load_dataset(path, istrain=True):
     else:
         image_paths = sorted(glob2.glob(os.path.join(path, 'test', '*.png')))
         for image_path in image_paths:
-            img = cv2.resize(src=cv2.imread(image_path), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            img = cv2.resize(src=cv2.imread(image_path, 0), dsize=IMAGE_SIZE, interpolation=cv2.INTER_AREA)
+            img = np.expand_dims(img , 2)
             X.append(img)
         with open(os.path.join(path, 'test_label.txt'), 'r') as f:
             data_labels = f.readlines()

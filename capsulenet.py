@@ -31,7 +31,7 @@ def CapsNet(input_shape, n_class, routings, batch_size):
 
     # Shared Decoder model in training and prediction
     decoder = models.Sequential(name='decoder')
-    decoder.add(layers.Dense(512, activation='relu', input_dim=16 * n_class, batch_size=batch_size))
+    decoder.add(layers.Dense(512, activation='relu', input_dim=16*n_class, batch_size=batch_size))
     decoder.add(layers.Dense(1024, activation='relu'))
     decoder.add(layers.Dense(np.prod(input_shape), activation='sigmoid'))
     decoder.add(layers.Reshape(target_shape=input_shape, name='out_recon'))

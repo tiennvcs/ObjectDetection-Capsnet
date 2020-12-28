@@ -13,7 +13,7 @@ from capsulenet import CapsNet, margin_loss
 from utils import print_info, load_dataset, split_dataset, \
                     data_generator, plot_log, combine_images
 from config import BATCH_SIZE, ROUTINGS
-
+from cnn_train import build_model
 
 K.set_image_data_format('channels_last')
 
@@ -48,15 +48,20 @@ def main(args):
     print(str("{:<40}|{:<30}".format("The number of testing examples", len(y_test))).center(100))
     print(str("{:<40}|{:<30}".format("The number of classes", len(np.unique(np.argmax(y_test, 1))))).center(100))
 
-    _, eval_model, manipulate_model = CapsNet(input_shape=x_test.shape[1:],
-                    n_class=len(np.unique(np.argmax(y_test, 1))),
-                    routings=ROUTINGS,
-                    batch_size=BATCH_SIZE)
+    if args['is_capsnet']:
+        _, eval_model, _ = CapsNet(input_shape=x_test.shape[1:],
+                        n_class=len(np.unique(np.argmax(y_test, 1))),
+                        routings=ROUTINGS,
+                        batch_size=BATCH_SIZE)
+    else:
+        eval_model = build_model(input_shape=x_test.shape[1:],
+                    n_class=len(np.unique(np.argmax(y_test, 1))))
+        args['output_path'] = 'CNN_result'
 
     # Load model weights from the path                    
     if args['weights'] is not None:
         eval_model.load_weights(args['weights'])
-        manipulate_model.load_weights(args['weights'])
+        #manipulate_model.load_weights(args['weights'])
     
     # eval_model.summary()
     # manipulate_model.summary()
@@ -74,6 +79,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Capsule classifier on custom dataset.")
     parser.add_argument('--test_data', default='../data', type=str,
                         help='The path of training image folder')
+    parser.add_argument('--is_capsnet', default=True, 
+                        help='The model training is Capsnet or CNNs.')
     parser.add_argument('-w', '--weights', default=None,
                         help="The path of model weights for testing")
     parser.add_argument('--output_path', default='./output_test',
