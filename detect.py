@@ -95,9 +95,9 @@ def detect_image_folder(folder_path, detector, classifier, confidence_thresh=0.2
         # Draw bounding boxes and corresponding classes.
         for (classid, score, box) in zip(class_ids, scores, boxes):
             label = "%s : %.3f" % (ENCODED2LABEL[classid], score)
-            img = cv2.rectangle(img, box, COLOR, 1)
+            img = cv2.rectangle(img, box, COLOR, 2)
             #img = cv2.rectangle(img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), COLOR, 1)
-            img = cv2.putText(img, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLOR, 1)
+            img = cv2.putText(img, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLOR, 2)
 
         info.append({'image_id':os.path.split(image_path)[1].split(".")[0], 'classes':class_ids, 
                       'scores':scores, 'boxes':boxes})
